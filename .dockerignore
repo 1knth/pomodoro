@@ -1,0 +1,10 @@
+.git
+node_modules
+komo-client/node_modules
+server/node_modules
+komo-client/dist
+server/public
+.env
+npm-debug.log
+Dockerfile
+.dockerignore
