@@ -6,7 +6,7 @@ import { SettingsDrawer } from './components/SettingsDrawer';
 import { TimerHud } from './components/TimerHud';
 import { VideoBackground } from './components/VideoBackground';
 import { THEME } from './constants/theme';
-import { useAtmosphereVideos } from './hooks/useAtmosphereVideos';
+import { useVideos } from './hooks/useVideos';
 import { usePomodoroTimer } from './hooks/usePomodoroTimer';
 import { formatTime } from './utils/time';
 
@@ -30,8 +30,8 @@ export default function KomoTerminal() {
   const iframeRef = useRef(null);
 
   const timer = usePomodoroTimer();
-  const atmosphere = useAtmosphereVideos();
-  const { loadCache } = atmosphere;
+  const videoState = useVideos();
+  const { loadVideos } = videoState;
 
   useEffect(() => {
     const clockInterval = setInterval(() => {
@@ -53,8 +53,8 @@ export default function KomoTerminal() {
   }, []);
 
   useEffect(() => {
-    loadCache();
-  }, [loadCache]);
+    loadVideos();
+  }, [loadVideos]);
 
   useEffect(() => {
     document.title = `[${formatTime(timer.timeLeft)}] ${timer.mode.toUpperCase()}`;
@@ -87,7 +87,7 @@ export default function KomoTerminal() {
   const handleManualSubmit = (e) => {
     if (e.key !== 'Enter') return;
 
-    const submitted = atmosphere.submitManualVideo();
+    const submitted = videoState.submitManualVideo();
     if (submitted) {
       setDrawerOpen(false);
       setIsVideoPlaying(true);
@@ -96,7 +96,7 @@ export default function KomoTerminal() {
   };
 
   const selectVideo = (videoId) => {
-    atmosphere.selectVideo(videoId);
+    videoState.selectVideo(videoId);
     setIsVideoPlaying(true);
     setDrawerOpen(false);
   };
@@ -121,7 +121,7 @@ export default function KomoTerminal() {
         <AppGlobalStyles />
 
         <VideoBackground
-          currentVid={atmosphere.currentVid}
+          currentVid={videoState.currentVid}
         iframeRef={iframeRef}
         onVideoLoad={handleVideoLoad}
         isActive={timer.isActive}
@@ -159,18 +159,18 @@ export default function KomoTerminal() {
         visible={visible}
         autoDim={autoDim}
         durations={timer.durations}
-        manualInput={atmosphere.manualInput}
-        statusMsg={atmosphere.statusMsg}
-        loading={atmosphere.loading}
-        videos={atmosphere.videos}
-        currentVid={atmosphere.currentVid}
+        manualInput={videoState.manualInput}
+        statusMsg={videoState.statusMsg}
+        loading={videoState.loading}
+        videos={videoState.videos}
+        currentVid={videoState.currentVid}
         onClose={() => setDrawerOpen(false)}
         onToggleVisible={toggleVisible}
         onToggleAutoDim={() => setAutoDim((prev) => !prev)}
         onUpdateDuration={timer.updateDuration}
-        onManualInputChange={atmosphere.setManualInput}
+        onManualInputChange={videoState.setManualInput}
         onManualSubmit={handleManualSubmit}
-        onForceRefresh={atmosphere.forceRefresh}
+        onForceRefresh={videoState.forceRefresh}
         onSelectVideo={selectVideo}
         />
       </div>

@@ -21,6 +21,9 @@ ENV NODE_ENV=production \
 COPY --from=server-deps /app/server/node_modules ./node_modules
 COPY server/package*.json ./
 COPY server/index.js ./
+COPY server/session ./session
+COPY server/videos ./videos
+COPY server/videoDiscovery ./videoDiscovery
 COPY --from=client-build /app/komo-client/dist ./public
 
 USER node

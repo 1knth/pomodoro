@@ -4,25 +4,25 @@ import { SEARCH_SEQUENCE } from '../constants/searchSequence';
 
 const FALLBACK_VIDEO_ID = 'bF2IxrQLCcQ';
 
-export function useAtmosphereVideos() {
+export function useVideos() {
   const [videos, setVideos] = useState([]);
   const [currentVid, setCurrentVid] = useState(FALLBACK_VIDEO_ID);
   const [loading, setLoading] = useState(false);
   const [manualInput, setManualInput] = useState('');
   const [statusMsg, setStatusMsg] = useState('> SYSTEM IDLE');
 
-  const loadCache = useCallback(async () => {
+  const loadVideos = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/atmosphere`);
-      if (!res.ok) throw new Error('Failed to load atmosphere videos');
+      const res = await fetch(`${API_BASE_URL}/api/videos`);
+      if (!res.ok) throw new Error('Failed to load videos');
 
       const data = await res.json();
       if (data.length > 0) {
         setVideos(data);
         setStatusMsg('LAST REFRESH');
       } else {
-        setStatusMsg('> VAULT EMPTY //');
-        setTimeout(loadCache, 2000);
+        setStatusMsg('> NO VIDEOS FOUND //');
+        setTimeout(loadVideos, 2000);
       }
     } catch {
       setStatusMsg('// CONNECTION LOST //');
@@ -40,13 +40,13 @@ export function useAtmosphereVideos() {
     }, 600);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/refresh`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/videos/refresh`, { method: 'POST' });
 
       if (res.status === 429) {
         const retryAfter = res.headers.get('Retry-After') ?? '30';
         throw new Error(`Refresh rate limited. Try again in ${retryAfter}s`);
       }
-      if (!res.ok) throw new Error('Failed to refresh atmosphere videos');
+      if (!res.ok) throw new Error('Failed to refresh videos');
 
       const data = await res.json();
       setVideos(data);
@@ -86,7 +86,7 @@ export function useAtmosphereVideos() {
     loading,
     manualInput,
     statusMsg,
-    loadCache,
+    loadVideos,
     forceRefresh,
     selectVideo,
     submitManualVideo,
