@@ -5,8 +5,27 @@ const app = express();
 const { exec } = require('child_process');
 const path = require('path'); // <--- NEW: Import 'path' module
 
+app.set('trust proxy', true);
+
 //middleware
-app.use(cors());
+const allowedOrigins = new Set([
+    'https://pomodoro.knthyang.xyz',
+    'https://knthyang.xyz',
+    'https://www.knthyang.xyz'
+]);
+
+app.use(cors({
+    origin(origin, callback) {
+        // Allow same-origin/server-to-server requests with no Origin header.
+        if (!origin || allowedOrigins.has(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204
+}));
 app.use(express.json()); // Fix for potential parsing issues
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -132,8 +151,38 @@ app.get('/api/atmosphere', (req, res) => {
 
 
 
+const REFRESH_RATE_LIMIT_MS = 30_000;
+let lastGlobalRefreshAt = 0;
+const lastRefreshByIp = new Map();
+
+function checkRefreshRateLimit(ip) {
+    const now = Date.now();
+    const lastForIp = lastRefreshByIp.get(ip) || 0;
+    const retryAfterMs = Math.max(
+        REFRESH_RATE_LIMIT_MS - (now - lastGlobalRefreshAt),
+        REFRESH_RATE_LIMIT_MS - (now - lastForIp)
+    );
+
+    if (retryAfterMs > 0) {
+        return Math.ceil(retryAfterMs / 1000);
+    }
+
+    lastGlobalRefreshAt = now;
+    lastRefreshByIp.set(ip, now);
+    return 0;
+}
+
 // 2. Force Refresh (The Endpoint Your Button Hits)
 app.post('/api/refresh', async (req, res) => {
+    const retryAfterSeconds = checkRefreshRateLimit(req.ip);
+    if (retryAfterSeconds > 0) {
+        res.set('Retry-After', String(retryAfterSeconds));
+        return res.status(429).json({
+            error: 'Refresh rate limited',
+            retryAfterSeconds
+        });
+    }
+
     try {
         console.log(":: MANUAL OVERRIDE :: RE-HYDRATING VAULT...");
         await hydrateVault(); // Wait for the scrape to finish

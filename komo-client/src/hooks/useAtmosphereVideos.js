@@ -41,13 +41,20 @@ export function useAtmosphereVideos() {
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/refresh`, { method: 'POST' });
+
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After') ?? '30';
+        throw new Error(`Refresh rate limited. Try again in ${retryAfter}s`);
+      }
       if (!res.ok) throw new Error('Failed to refresh atmosphere videos');
 
       const data = await res.json();
       setVideos(data);
       setStatusMsg(`SUCCESSFULLY UPDATED > [${data.length}] NEW VIDEOS LOADED`);
-    } catch {
-      setStatusMsg('REFRESH FAILED > PLEASE TRY AGAIN...');
+    } catch (error) {
+      setStatusMsg(error.message?.includes('rate limited')
+        ? `REFRESH LOCKED > ${error.message}`
+        : 'REFRESH FAILED > PLEASE TRY AGAIN...');
     } finally {
       clearInterval(sequenceId);
       setLoading(false);
