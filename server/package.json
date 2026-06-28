@@ -1,0 +1,22 @@
+{
+  "name": "komo-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Express API for Komo atmosphere video discovery.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "yt-search": "^2.13.1"
+  },
+  "overrides": {
+    "minimatch": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

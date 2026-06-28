@@ -1,0 +1,20 @@
+{
+  "name": "komo-react",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Komo Pomodoro focus app with a React/Vite client and Express API server.",
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c magenta,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "npm --prefix komo-client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "start": "npm --prefix server start",
+    "build": "npm --prefix komo-client run build",
+    "lint": "npm --prefix komo-client run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
