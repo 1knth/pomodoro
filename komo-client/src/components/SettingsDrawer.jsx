@@ -54,6 +54,7 @@ export function SettingsDrawer({
           }}
         >
           <Motion.div
+            className="settings-page"
             initial={shouldReduceMotion ? false : { scale: 0.95, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={shouldReduceMotion ? undefined : { scale: 0.95, y: 20 }}
@@ -65,71 +66,51 @@ export function SettingsDrawer({
               <button type="button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: THEME.fontMono, fontSize: '12px' }}> OPEN / CLOSE [ESC]</button>
             </div>
 
-            <div style={{ marginBottom: '30px' }}>
-              <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#666', marginBottom: '10px', letterSpacing: '1px' }}>CONFIGURATION</div>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button type="button" className={`config-btn ${visible.timer ? 'active' : ''}`} onClick={() => onToggleVisible('timer')}>TIMER</button>
-                <button type="button" className={`config-btn ${visible.dock ? 'active' : ''}`} onClick={() => onToggleVisible('dock')}>CONTROLS</button>
-                <button type="button" className={`config-btn ${visible.intent ? 'active' : ''}`} onClick={() => onToggleVisible('intent')}>NOTE</button>
-                <div style={{ width: '1px', background: '#333', margin: '0 5px' }} />
-                <button type="button" className={`config-btn ${autoDim ? 'active' : ''}`} onClick={onToggleAutoDim}>WIDGET DIMMING</button>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px', marginBottom: '1.5rem' }}>
+              <section style={{ minWidth: 0, background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '16px' }}>
+                <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#888', marginBottom: '14px', letterSpacing: '1px' }}>WIDGETS & BEHAVIOR</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px' }}>
+                  <button type="button" className={`config-btn ${visible.timer ? 'active' : ''}`} aria-pressed={visible.timer} onClick={() => onToggleVisible('timer')}>TIMER</button>
+                  <button type="button" className={`config-btn ${visible.dock ? 'active' : ''}`} aria-pressed={visible.dock} onClick={() => onToggleVisible('dock')}>CONTROLS</button>
+                  <button type="button" className={`config-btn ${visible.intent ? 'active' : ''}`} aria-pressed={visible.intent} onClick={() => onToggleVisible('intent')}>NOTE</button>
+                  <button type="button" className={`config-btn ${autoDim ? 'active' : ''}`} aria-pressed={autoDim} onClick={onToggleAutoDim}>WIDGET DIMMING</button>
+                </div>
+              </section>
+
+              <section style={{ minWidth: 0, background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '16px' }}>
+                <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#888', marginBottom: '14px', letterSpacing: '1px' }}>SOUND</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style={{ flexShrink: 0, opacity: 0.7 }}><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" /></svg>
+                  <input type="range" min="0" max="100" step="1" value={volume} onChange={onVolumeChange} aria-label="Volume" style={{ flex: 1, minWidth: 0, background: '#fff8ed5c', borderRadius: '1.5rem', opacity: '0.8' }} />
+                  <div style={{ width: '34px', flexShrink: 0, textAlign: 'right', fontFamily: THEME.fontMono, fontSize: '11px', color: '#888' }}>{volume}%</div>
+                </div>
+                <button type="button" className={`config-btn ${chimeEnabled ? 'active' : ''}`} onClick={onToggleChime} aria-pressed={chimeEnabled} style={{ marginTop: '14px' }}>
+                  CHIME {chimeEnabled ? 'ON' : 'OFF'}
+                </button>
+              </section>
             </div>
 
-            <div style={{ width: 'min(360px, 100%)', boxSizing: 'border-box', background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '12px 14px', marginBottom: '1.25rem' }}>
-              <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#666', marginBottom: '10px', letterSpacing: '1px' }}>VOLUME</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style={{ flexShrink: 0, opacity: 0.7 }}><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" /></svg>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={volume}
-                  onChange={onVolumeChange}
-                  aria-label="Volume"
-                  style={{ flex: 1, minWidth: 0, background: '#fff8ed5c', borderRadius: '1.5rem', opacity: '0.8' }}
-                />
-                <div style={{ width: '34px', flexShrink: 0, textAlign: 'right', fontFamily: THEME.fontMono, fontSize: '11px', color: '#888' }}>{volume}%</div>
-              </div>
-              <button
-                type="button"
-                className={`config-btn ${chimeEnabled ? 'active' : ''}`}
-                onClick={onToggleChime}
-                aria-pressed={chimeEnabled}
-                style={{ marginTop: '10px' }}
-              >
-                CHIME {chimeEnabled ? 'ON' : 'OFF'}
-              </button>
+            <div aria-label="Timer durations" style={{ width: 'min(340px, 100%)', display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginBottom: '1.5rem', fontSize: '16px', textTransform: 'lowercase' }}>
+              {[
+                ['focus', 'FOCUS DURATION (MIN)'],
+                ['break', 'BREAK DURATION (MIN)'],
+                ['short', 'SHORT BREAK (MIN)'],
+              ].map(([key, label]) => (
+                <label key={key} style={{ minWidth: 0, display: 'grid', gridTemplateColumns: '1fr minmax(6ch, 25%)', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '8px 10px', cursor: 'text' }}>
+                  <span style={{ fontFamily: THEME.fontMono, color: '#888' }}>{label}</span>
+                  <input type="number" min="1" max="999" step="1" aria-label={label} value={durations[key]} onChange={(e) => onUpdateDuration(key, e.target.value)} style={{ boxSizing: 'border-box', width: '100%', minWidth: 0, padding: '5px 8px', textAlign: 'right', background: 'rgba(255,255,255,0.04)', border: `1px solid ${THEME.border}`, borderRadius: '4px', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: 'inherit', outline: 'none', cursor: 'text' }} onFocus={(e) => { e.currentTarget.style.borderColor = THEME.alabaster; }} onBlur={(e) => { e.currentTarget.style.borderColor = THEME.border; }} />
+                </label>
+              ))}
             </div>
 
             {!visible.dock && (
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                 <button type="button" className="config-btn" onClick={onResetTimer}>RESTART TIME</button>
                 <button type="button" className={`config-btn ${isActive ? 'active' : ''}`} onClick={onToggleTimer}>
                   {isActive ? (mode === 'focus' ? 'PAUSE FLOW' : 'PAUSE BREAK') : (mode === 'focus' ? 'START FLOW' : 'START BREAK')}
                 </button>
               </div>
             )}
-
-            <div style={{ width: 'min(560px, 100%)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(145px, 100%), 1fr))', gap: '10px', marginBottom: '1.5rem' }}>
-              {[
-                ['focus', 'FOCUS DURATION (MIN)'],
-                ['break', 'BREAK DURATION (MIN)'],
-                ['short', 'SHORT BREAK (MIN)'],
-              ].map(([key, label]) => (
-                <div key={key} style={{ minWidth: 0, background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#666', marginBottom: '6px' }}>{label}</div>
-                  <input
-                    type="number"
-                    aria-label={label}
-                    value={durations[key]}
-                    onChange={(e) => onUpdateDuration(key, e.target.value)}
-                    style={{ background: 'transparent', border: 'none', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '16px', width: '5ch', maxWidth: '100%', outline: 'none' }}
-                  />
-                </div>
-              ))}
-            </div>
 
             <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '8px', padding: '12px', marginBottom: '20px', display: 'flex' }}>
               <input
