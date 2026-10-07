@@ -4,6 +4,7 @@ import { THEME } from '../constants/theme';
 
 export function VideoCarousel({ open, videos, currentVid, pendingVideoId, loading = false, statusMsg, onClose, onNavigate, onAnimationComplete }) {
   const shouldReduceMotion = useReducedMotion();
+  const [isMounted, setIsMounted] = useState(open);
   const controls = useAnimationControls();
   const selectedId = pendingVideoId ?? currentVid;
   const currentIndex = Math.max(0, videos.findIndex((video) => video.id === selectedId));
@@ -11,7 +12,18 @@ export function VideoCarousel({ open, videos, currentVid, pendingVideoId, loadin
   const wasOpenRef = useRef(false);
   const trackAnimationIdRef = useRef(0);
   const onAnimationCompleteRef = useRef(onAnimationComplete);
-  const trackOffset = useCallback((slot) => `-${(slot + 0.5) * 100 / (videos.length + 2)}%`, [videos.length]);
+  const trackOffset = useCallback((slot) => `-${(slot + 0.5) * 100 / (videos.length * 3)}%`, [videos.length]);
+
+  useEffect(() => {
+    if (open) return undefined;
+    if (!isMounted) return undefined;
+    if (shouldReduceMotion) {
+      const exitTimer = window.setTimeout(() => setIsMounted(false), 0);
+      return () => window.clearTimeout(exitTimer);
+    }
+    const exitTimer = window.setTimeout(() => setIsMounted(false), 400);
+    return () => window.clearTimeout(exitTimer);
+  }, [open, isMounted, shouldReduceMotion]);
 
   useLayoutEffect(() => {
     onAnimationCompleteRef.current = onAnimationComplete;
@@ -29,7 +41,7 @@ export function VideoCarousel({ open, videos, currentVid, pendingVideoId, loadin
       return;
     }
 
-    const normalized = currentIndex + (videos.length > 1 ? 1 : 0);
+    const normalized = videos.length + currentIndex;
     if (!wasOpenRef.current) {
       previousIndexRef.current = currentIndex;
       wasOpenRef.current = true;
@@ -39,15 +51,16 @@ export function VideoCarousel({ open, videos, currentVid, pendingVideoId, loadin
     if (videos.length <= 1) return;
 
     const previousIndex = previousIndexRef.current;
-    const isForwardWrap = previousIndex === videos.length - 1 && currentIndex === 0;
-    const isReverseWrap = previousIndex === 0 && currentIndex === videos.length - 1;
-    const destination = isForwardWrap ? videos.length + 1 : isReverseWrap ? 0 : currentIndex + 1;
+    const delta = currentIndex === (previousIndex + 1) % videos.length ? 1 : -1;
+    const destination = videos.length + previousIndex + delta;
     previousIndexRef.current = currentIndex;
 
     const animationId = ++trackAnimationIdRef.current;
     controls.start({ x: trackOffset(destination), transition: shouldReduceMotion ? { duration: 0 } : { type: 'tween', duration: 0.4, ease: 'easeInOut' } }).then(() => {
       if (animationId !== trackAnimationIdRef.current) return;
-      if (isForwardWrap || isReverseWrap) controls.set({ x: trackOffset(normalized) });
+      // Recenter on the middle copy after each move. The copies are identical,
+      // so this position correction is visually indistinguishable from staying put.
+      controls.set({ x: trackOffset(normalized) });
       onAnimationCompleteRef.current?.();
     });
   }, [open, currentIndex, videos.length, shouldReduceMotion, controls, trackOffset]);
@@ -58,35 +71,21 @@ export function VideoCarousel({ open, videos, currentVid, pendingVideoId, loadin
   };
   const current = videos[currentIndex];
   const displayVideos = videos.length > 1
-    ? [videos[videos.length - 1], ...videos, videos[0]]
+    ? [...videos, ...videos, ...videos]
     : videos;
-  const displayIndex = videos.length > 1 ? currentIndex + 1 : currentIndex;
-
-  // The sentinel cards are already in the track, but their image requests may
-  // otherwise start only as the user reaches the boundary. Warm boundary assets
-  // as soon as the feed arrives so the cloned card can render without a blank.
-  useEffect(() => {
-    if (videos.length < 2) return;
-    [videos[0], videos[videos.length - 1]].forEach((video) => {
-      [video.thumb, video.channelAvatar || video.channelThumbnail || video.avatar || video.author?.avatar]
-        .filter(Boolean)
-        .forEach((src) => {
-          const image = new Image();
-          image.src = src;
-        });
-    });
-  }, [videos]);
+  const displayIndex = videos.length > 1 ? videos.length + currentIndex : currentIndex;
 
   return (
     <>
-      {open && (
+      {(open || isMounted) && (
         <div
           key="video-carousel-overlay"
+          className="video-carousel-overlay"
           role="dialog"
           aria-modal="true"
           aria-label="Video carousel"
-          onClick={(event) => event.target === event.currentTarget && onClose()}
-          style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'grid', placeItems: 'center', padding: '20px', boxSizing: 'border-box', background: 'rgba(5, 5, 6, 0.78)', backdropFilter: 'blur(5px)', pointerEvents: open ? 'auto' : 'none' }}
+          onClick={(event) => event.target === event.currentTarget && open && onClose()}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'grid', placeItems: 'center', padding: '20px', boxSizing: 'border-box', background: 'rgba(5, 5, 6, 0.38)', backdropFilter: 'blur(5px)', opacity: open ? 1 : 0, transition: shouldReduceMotion ? 'none' : 'opacity 400ms ease-in-out', pointerEvents: open ? 'auto' : 'none' }}
         >
           <section
             style={{ width: 'min(100%, 1280px)', color: THEME.alabaster, fontFamily: THEME.fontUi }}
@@ -115,15 +114,13 @@ export function VideoCarousel({ open, videos, currentVid, pendingVideoId, loadin
                         style={{ flex: `0 0 ${100 / displayVideos.length}%`, minWidth: 0, boxSizing: 'border-box', padding: '12px clamp(4px, 0.5vw, 8px)', color: 'inherit', textAlign: 'left', opacity: isSelected ? 1 : 0.72, transform: isSelected ? 'scale(1)' : 'scale(.94)', transition: shouldReduceMotion ? 'none' : 'opacity .4s ease-in-out, transform .4s ease-in-out' }}
                       >
                         <button type="button" onClick={() => !isSelected && move(direction)} aria-label={isSelected ? `Selected video: ${video.title}` : `${direction < 0 ? 'Previous' : 'Next'} video: ${video.title}`} style={{ display: 'block', width: '100%', padding: 0, border: 0, background: 'transparent', color: 'inherit', cursor: isSelected ? 'default' : 'pointer', textAlign: 'left' }}>
-                          <Motion.img src={video.thumb} alt="" style={{ ...imageStyle, aspectRatio: '16 / 9', borderRadius: 3 }} animate={{ boxShadow: isSelected ? '0 12px 32px rgba(0,0,0,.36), 0 0 52px rgba(255,255,255,.12), 0 0 18px rgba(255,255,255,.20)' : 'none' }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.24 }} />
+                          <Motion.img src={video.thumb} alt="" style={{ ...imageStyle, aspectRatio: '16 / 9', borderRadius: 3, outline: isSelected ? '3px solid rgba(255,255,255,.55)' : 'none', outlineOffset: '-1px' }} animate={{ boxShadow: isSelected ? '0 12px 32px rgba(0,0,0,.36), 0 0 52px rgba(255,255,255,.12), 0 0 18px rgba(255,255,255,.20)' : 'none' }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.24 }} />
                           {isSelected ? <ChannelMetadata video={video} /> : <span style={sideTitleStyle}>{video.title}</span>}
                         </button>
                       </div>
                     );
                   })}
                   </Motion.div>
-                  <div aria-hidden="true" style={{ position: 'absolute', inset: '0 auto 0 0', width: 'clamp(20px, 5vw, 64px)', pointerEvents: 'none', background: 'linear-gradient(90deg, rgba(5,5,6,.38), transparent)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', maskImage: 'linear-gradient(90deg, #000 0%, transparent 100%)', WebkitMaskImage: 'linear-gradient(90deg, #000 0%, transparent 100%)' }} />
-                  <div aria-hidden="true" style={{ position: 'absolute', inset: '0 0 0 auto', width: 'clamp(20px, 5vw, 64px)', pointerEvents: 'none', background: 'linear-gradient(270deg, rgba(5,5,6,.38), transparent)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', maskImage: 'linear-gradient(270deg, #000 0%, transparent 100%)', WebkitMaskImage: 'linear-gradient(270deg, #000 0%, transparent 100%)' }} />
                 </div>
                 <button type="button" onClick={() => move(1)} aria-label="Next video" style={{ ...arrowStyle, position: 'static', transform: 'none', width: '100%', height: '100%' }}>›</button>
               </div>
