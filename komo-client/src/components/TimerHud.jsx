@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { motion as Motion, useReducedMotion } from 'framer-motion';
 import { THEME } from '../constants/theme';
 import { formatTime } from '../utils/time';
@@ -10,24 +11,59 @@ export function TimerHud({
   autoDim,
   currentTime,
   visible,
-  volume,
   isVideoPlaying,
   onSwitchMode,
   onToggleTimer,
   onResetTimer,
   onToggleVideoPlay,
   onOpenDrawer,
-  onVolumeChange,
 }) {
   const shouldReduceMotion = useReducedMotion();
+  const [isHovered, setIsHovered] = useState(false);
+  const clockPointerStartRef = useRef(null);
+
+  const handleClockPointerDown = (event) => {
+    clockPointerStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handleClockPointerUp = (event) => {
+    const start = clockPointerStartRef.current;
+    clockPointerStartRef.current = null;
+
+    if (!start) return;
+
+    const dragDistance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (dragDistance <= 6) {
+      onToggleTimer();
+    }
+  };
 
   return (
-    <Motion.div
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          left: '24px',
+          bottom: '24px',
+          zIndex: 100,
+          fontFamily: THEME.fontMono,
+          fontSize: '0.9rem',
+          color: '#ffffff43',
+          letterSpacing: '2px',
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}
+      >
+        {currentTime}
+      </div>
+
+      <Motion.div
       drag
       dragMomentum={false}
       initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-      animate={{ opacity: isActive && autoDim ? 0.1 : 1, y: 0 }}
-      whileHover={{ opacity: 1 }}
+      animate={{ opacity: isActive && autoDim && !isHovered ? 0.1 : 1, y: 0 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       style={{
         position: 'absolute',
         top: '37%',
@@ -43,7 +79,7 @@ export function TimerHud({
     >
       <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', zIndex: 101 }}>
         {['focus', 'break', 'short'].map((item) => (
-          <button key={item} type="button" className={`mode-btn ${mode === item ? 'active' : ''}`} onClick={() => onSwitchMode(item)}>
+          <button key={item} type="button" className={`mode-btn ${mode === item ? 'active' : ''}`} onClick={() => onSwitchMode(item)} style={{ fontSize: '12px' }}>
             {item.toUpperCase()}
           </button>
         ))}
@@ -52,7 +88,8 @@ export function TimerHud({
       {visible.timer && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem' }}>
           <div
-            onClick={onToggleTimer}
+            onPointerDown={handleClockPointerDown}
+            onPointerUp={handleClockPointerUp}
             style={{
               fontFamily: THEME.fontMono,
               fontSize: 'clamp(80px, 12vw, 160px)',
@@ -65,9 +102,6 @@ export function TimerHud({
             }}
           >
             {formatTime(timeLeft)}
-          </div>
-          <div style={{ fontFamily: THEME.fontMono, fontSize: '0.9rem', color: '#ffffff43', letterSpacing: '2px', marginTop: '0.2rem' }}>
-            {currentTime}
           </div>
         </div>
       )}
@@ -105,26 +139,7 @@ export function TimerHud({
         </div>
       )}
 
-      {visible.volume && (
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', width: '9rem', opacity: 0.6, transition: 'opacity 0.2s', backgroundColor: '#00000072', borderRadius: '1.5rem', padding: '0rem 0.5rem 0rem 0.5rem' }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.6; }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style={{ flexShrink: 0 }}><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" /></svg>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={volume}
-            onChange={onVolumeChange}
-            aria-label="Volume"
-            onPointerDown={(e) => e.stopPropagation()}
-            style={{ background: '#fff8ed5c', borderRadius: '1.5rem', opacity: '0.8' }}
-          />
-        </div>
-      )}
-    </Motion.div>
+      </Motion.div>
+    </>
   );
 }

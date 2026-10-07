@@ -19,6 +19,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
+# Pi local context
+pi.md
+
 # OS/editor
 .DS_Store
 .vscode/*

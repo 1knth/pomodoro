@@ -5,7 +5,35 @@ export function usePomodoroTimer() {
   const [mode, setMode] = useState('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
+  const [chimeEnabled, setChimeEnabled] = useState(() => {
+    try {
+      return window.localStorage.getItem('komo-chime-enabled') !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const timerRef = useRef(null);
+  const chimeEnabledRef = useRef(chimeEnabled);
+  const audioContextRef = useRef(null);
+  const modeRef = useRef(mode);
+  const durationsRef = useRef(durations);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  useEffect(() => {
+    durationsRef.current = durations;
+  }, [durations]);
+
+  useEffect(() => {
+    chimeEnabledRef.current = chimeEnabled;
+    try {
+      window.localStorage.setItem('komo-chime-enabled', String(chimeEnabled));
+    } catch {
+      // Storage may be unavailable; the in-memory setting still works.
+    }
+  }, [chimeEnabled]);
 
   const switchMode = (newMode) => {
     setMode(newMode);
@@ -23,38 +51,70 @@ export function usePomodoroTimer() {
     }
   };
 
+  const playCompletionChime = useCallback(() => {
+    if (!chimeEnabledRef.current) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const context = audioContextRef.current || new AudioContextClass();
+    audioContextRef.current = context;
+    if (context.state === 'suspended') context.resume();
+
+    const now = context.currentTime;
+    [659.25, 783.99].forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const start = now + index * 0.18;
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.12, start + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.9);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.95);
+    });
+  }, []);
+
   const handleTimerComplete = useCallback(() => {
-    if (mode === 'focus') {
-      console.log('FOCUS COMPLETE > INITIATING BREAK');
-      setMode('break');
-      setTimeLeft(durations.break * 60);
-      setIsActive(true);
-    } else {
-      console.log('BREAK COMPLETE > RE-ENGAGING FOCUS');
-      setMode('focus');
-      setTimeLeft(durations.focus * 60);
-      setIsActive(true);
-    }
-  }, [mode, durations.break, durations.focus]);
+    playCompletionChime();
+    const currentMode = modeRef.current;
+    const nextMode = currentMode === 'focus' ? 'break' : 'focus';
+
+    console.log(currentMode === 'focus' ? 'FOCUS COMPLETE > INITIATING BREAK' : 'BREAK COMPLETE > RE-ENGAGING FOCUS');
+    setMode(nextMode);
+    setIsActive(true);
+
+    return durationsRef.current[nextMode] * 60;
+  }, [playCompletionChime]);
 
   useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleTimerComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (!isActive) {
+      clearInterval(timerRef.current);
+      return undefined;
     }
 
-    return () => clearInterval(timerRef.current);
-  }, [isActive, timeLeft, handleTimerComplete]);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          return handleTimerComplete();
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  const toggleTimer = () => setIsActive((prev) => !prev);
+    return () => clearInterval(timerRef.current);
+  }, [isActive, handleTimerComplete]);
+
+  const toggleTimer = () => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioContextRef.current ||= new AudioContextClass();
+      if (audioContextRef.current.state === 'suspended') audioContextRef.current.resume();
+    }
+    setIsActive((prev) => !prev);
+  };
   const resetTimer = () => {
     setIsActive(false);
     setTimeLeft(durations[mode] * 60);
@@ -65,6 +125,8 @@ export function usePomodoroTimer() {
     mode,
     timeLeft,
     isActive,
+    chimeEnabled,
+    toggleChime: () => setChimeEnabled((enabled) => !enabled),
     switchMode,
     updateDuration,
     toggleTimer,

@@ -1,4 +1,6 @@
 export function VideoBackground({ currentVid, iframeRef, onVideoLoad, isActive }) {
+  const origin = typeof window === 'undefined' ? '' : `&origin=${encodeURIComponent(window.location.origin)}`;
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: '#000' }}>
       <div
@@ -22,7 +24,7 @@ export function VideoBackground({ currentVid, iframeRef, onVideoLoad, isActive }
           onLoad={onVideoLoad}
           width="100%"
           height="100%"
-          src={`https://www.youtube.com/embed/${currentVid}?autoplay=1&mute=1&controls=0&loop=1&playlist=${currentVid}&showinfo=0&modestbranding=1&iv_load_policy=3&enablejsapi=1`}
+          src={`https://www.youtube.com/embed/${currentVid}?autoplay=1&mute=1&controls=0&loop=1&playlist=${currentVid}&showinfo=0&modestbranding=1&iv_load_policy=3&enablejsapi=1&playsinline=1&disablekb=1&fs=0&rel=0${origin}`}
           frameBorder="0"
           allow="autoplay; encrypted-media"
         />

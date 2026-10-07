@@ -11,6 +11,10 @@ export function SettingsDrawer({
   loading,
   videos,
   currentVid,
+  volume,
+  mode,
+  isActive,
+  chimeEnabled,
   onClose,
   onToggleVisible,
   onToggleAutoDim,
@@ -19,6 +23,10 @@ export function SettingsDrawer({
   onManualSubmit,
   onForceRefresh,
   onSelectVideo,
+  onVolumeChange,
+  onToggleTimer,
+  onResetTimer,
+  onToggleChime,
 }) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -38,9 +46,11 @@ export function SettingsDrawer({
             background: 'rgba(5, 5, 6, 0.56)',
             backdropFilter: 'blur(5px)',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
             overflowY: 'auto',
+            padding: 'clamp(16px, 4vw, 48px)',
+            boxSizing: 'border-box',
           }}
         >
           <Motion.div
@@ -48,10 +58,10 @@ export function SettingsDrawer({
             animate={{ scale: 1, y: 0 }}
             exit={shouldReduceMotion ? undefined : { scale: 0.95, y: 20 }}
             transition={shouldReduceMotion ? { duration: 0 } : undefined}
-            style={{ width: '92%', maxWidth: '1200px', height: '109rem', marginTop: '40rem', display: 'flex', flexDirection: 'column' }}
+            style={{ width: 'min(1200px, 100%)', maxHeight: 'calc(100vh - clamp(32px, 8vw, 96px))', display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box', paddingRight: '4px' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '6rem 0rem 0rem 0rem', alignItems: 'center', marginBottom: '3rem' }}>
-              <h2 style={{ fontFamily: THEME.fontUi, fontWeight: 200, letterSpacing: '6px', fontSize: '12px', color: '#666' }}>KOMO // SETTINGS</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: 'clamp(1.5rem, 4vw, 3rem)' }}>
+              <h2 style={{ fontFamily: THEME.fontUi, fontWeight: 200, letterSpacing: 'clamp(3px, 1vw, 6px)', fontSize: '12px', color: '#666', margin: 0 }}>KOMO // SETTINGS</h2>
               <button type="button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: THEME.fontMono, fontSize: '12px' }}> OPEN / CLOSE [ESC]</button>
             </div>
 
@@ -60,27 +70,62 @@ export function SettingsDrawer({
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button type="button" className={`config-btn ${visible.timer ? 'active' : ''}`} onClick={() => onToggleVisible('timer')}>TIMER</button>
                 <button type="button" className={`config-btn ${visible.dock ? 'active' : ''}`} onClick={() => onToggleVisible('dock')}>CONTROLS</button>
-                <button type="button" className={`config-btn ${visible.volume ? 'active' : ''}`} onClick={() => onToggleVisible('volume')}>VOLUME</button>
                 <button type="button" className={`config-btn ${visible.intent ? 'active' : ''}`} onClick={() => onToggleVisible('intent')}>NOTE</button>
                 <div style={{ width: '1px', background: '#333', margin: '0 5px' }} />
                 <button type="button" className={`config-btn ${autoDim ? 'active' : ''}`} onClick={onToggleAutoDim}>WIDGET DIMMING</button>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '2rem' }}>
+            <div style={{ width: 'min(360px, 100%)', boxSizing: 'border-box', background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '12px 14px', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#666', marginBottom: '10px', letterSpacing: '1px' }}>VOLUME</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style={{ flexShrink: 0, opacity: 0.7 }}><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" /></svg>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={volume}
+                  onChange={onVolumeChange}
+                  aria-label="Volume"
+                  style={{ flex: 1, minWidth: 0, background: '#fff8ed5c', borderRadius: '1.5rem', opacity: '0.8' }}
+                />
+                <div style={{ width: '34px', flexShrink: 0, textAlign: 'right', fontFamily: THEME.fontMono, fontSize: '11px', color: '#888' }}>{volume}%</div>
+              </div>
+              <button
+                type="button"
+                className={`config-btn ${chimeEnabled ? 'active' : ''}`}
+                onClick={onToggleChime}
+                aria-pressed={chimeEnabled}
+                style={{ marginTop: '10px' }}
+              >
+                CHIME {chimeEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+
+            {!visible.dock && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '2rem' }}>
+                <button type="button" className="config-btn" onClick={onResetTimer}>RESTART TIME</button>
+                <button type="button" className={`config-btn ${isActive ? 'active' : ''}`} onClick={onToggleTimer}>
+                  {isActive ? (mode === 'focus' ? 'PAUSE FLOW' : 'PAUSE BREAK') : (mode === 'focus' ? 'START FLOW' : 'START BREAK')}
+                </button>
+              </div>
+            )}
+
+            <div style={{ width: 'min(560px, 100%)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(145px, 100%), 1fr))', gap: '10px', marginBottom: '1.5rem' }}>
               {[
                 ['focus', 'FOCUS DURATION (MIN)'],
                 ['break', 'BREAK DURATION (MIN)'],
                 ['short', 'SHORT BREAK (MIN)'],
               ].map(([key, label]) => (
-                <div key={key} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '15px' }}>
-                  <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#666', marginBottom: '8px' }}>{label}</div>
+                <div key={key} style={{ minWidth: 0, background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontFamily: THEME.fontMono, color: '#666', marginBottom: '6px' }}>{label}</div>
                   <input
                     type="number"
                     aria-label={label}
                     value={durations[key]}
                     onChange={(e) => onUpdateDuration(key, e.target.value)}
-                    style={{ background: 'transparent', border: 'none', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '18px', width: '100%', outline: 'none' }}
+                    style={{ background: 'transparent', border: 'none', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '16px', width: '5ch', maxWidth: '100%', outline: 'none' }}
                   />
                 </div>
               ))}
@@ -98,8 +143,8 @@ export function SettingsDrawer({
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: `1px solid ${THEME.border}`, paddingBottom: '15px' }}>
-              <div style={{ fontFamily: THEME.fontMono, fontSize: '10px', color: statusMsg.includes('ERROR') ? THEME.signal : (statusMsg.includes('UPDATED') || statusMsg.includes('LOCKED') ? THEME.active : '#444'), textTransform: 'uppercase', letterSpacing: '1px' }}>{statusMsg}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', borderBottom: `1px solid ${THEME.border}`, paddingBottom: '15px' }}>
+              <div style={{ fontFamily: THEME.fontMono, fontSize: '10px', color: statusMsg.includes('ERROR') ? THEME.signal : (statusMsg.includes('UPDATED') || statusMsg.includes('LOCKED') ? THEME.active : '#444'), textTransform: 'uppercase', letterSpacing: '1px', overflowWrap: 'anywhere' }}>{statusMsg}</div>
               <button
                 type="button"
                 onClick={onForceRefresh}
@@ -121,7 +166,7 @@ export function SettingsDrawer({
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', padding: '1rem 1rem 10rem 1rem', overflowY: 'hidden', overflowX: 'hidden', flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 'clamp(0.75rem, 2vw, 1.5rem)', padding: '1rem 0 2rem 0', overflow: 'visible' }}>
               {videos.map((vid) => (
                 <div
                   key={vid.id}

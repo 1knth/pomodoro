@@ -23,8 +23,7 @@ export default function KomoTerminal() {
   const [visible, setVisible] = useState({
     timer: true,
     dock: true,
-    volume: true,
-    intent: true,
+    intent: false,
   });
 
   const iframeRef = useRef(null);
@@ -60,6 +59,32 @@ export default function KomoTerminal() {
     document.title = `[${formatTime(timer.timeLeft)}] ${timer.mode.toUpperCase()}`;
   }, [timer.timeLeft, timer.mode]);
 
+  useEffect(() => {
+    const handlePlayerMessage = (event) => {
+      let data = event.data;
+
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          return;
+        }
+      }
+
+      const playerState = data?.event === 'onStateChange' ? data.info : data?.info?.playerState;
+
+      // YouTube iframe states: 1 = playing, 2 = paused, 0 = ended.
+      if (playerState === 1) {
+        setIsVideoPlaying(true);
+      } else if (playerState === 2 || playerState === 0) {
+        setIsVideoPlaying(false);
+      }
+    };
+
+    window.addEventListener('message', handlePlayerMessage);
+    return () => window.removeEventListener('message', handlePlayerMessage);
+  }, []);
+
   const postPlayerCommand = (func, args = []) => {
     iframeRef.current?.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
   };
@@ -70,16 +95,31 @@ export default function KomoTerminal() {
     setIsVideoPlaying((prev) => !prev);
   };
 
+  const getPlayerVolume = (uiVolume) => {
+    if (uiVolume <= 0) return 0;
+    return Math.max(1, Math.round((uiVolume / 100) ** 2 * 100));
+  };
+
   const handleVolumeChange = (e) => {
     const newVol = parseInt(e.target.value, 10);
+    const playerVolume = getPlayerVolume(newVol);
     setVolume(newVol);
-    postPlayerCommand(newVol > 0 ? 'unMute' : 'mute');
-    postPlayerCommand('setVolume', [newVol]);
+    postPlayerCommand(playerVolume > 0 ? 'unMute' : 'mute');
+    postPlayerCommand('setVolume', [playerVolume]);
+
+    // Mobile YouTube embeds can pause when audio is enabled/changed.
+    // If the app believed the video was playing, retry play during this user gesture.
+    if (playerVolume > 0 && isVideoPlaying) {
+      postPlayerCommand('playVideo');
+    }
   };
 
   const handleVideoLoad = () => {
-    postPlayerCommand('setVolume', [volume]);
-    if (volume > 0) {
+    postPlayerCommand('addEventListener', ['onStateChange']);
+
+    const playerVolume = getPlayerVolume(volume);
+    postPlayerCommand('setVolume', [playerVolume]);
+    if (playerVolume > 0) {
       postPlayerCommand('unMute');
     }
   };
@@ -134,14 +174,12 @@ export default function KomoTerminal() {
         autoDim={autoDim}
         currentTime={currentTime}
         visible={visible}
-        volume={volume}
         isVideoPlaying={isVideoPlaying}
         onSwitchMode={timer.switchMode}
         onToggleTimer={timer.toggleTimer}
         onResetTimer={timer.resetTimer}
         onToggleVideoPlay={toggleVideoPlay}
         onOpenDrawer={() => setDrawerOpen(true)}
-        onVolumeChange={handleVolumeChange}
         />
 
         <NoteWidget
@@ -164,6 +202,10 @@ export default function KomoTerminal() {
         loading={videoState.loading}
         videos={videoState.videos}
         currentVid={videoState.currentVid}
+        volume={volume}
+        mode={timer.mode}
+        isActive={timer.isActive}
+        chimeEnabled={timer.chimeEnabled}
         onClose={() => setDrawerOpen(false)}
         onToggleVisible={toggleVisible}
         onToggleAutoDim={() => setAutoDim((prev) => !prev)}
@@ -172,6 +214,10 @@ export default function KomoTerminal() {
         onManualSubmit={handleManualSubmit}
         onForceRefresh={videoState.forceRefresh}
         onSelectVideo={selectVideo}
+        onVolumeChange={handleVolumeChange}
+        onToggleTimer={timer.toggleTimer}
+        onResetTimer={timer.resetTimer}
+        onToggleChime={timer.toggleChime}
         />
       </div>
     </MotionConfig>
