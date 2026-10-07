@@ -5,6 +5,7 @@ import { NoteWidget } from './components/NoteWidget';
 import { SettingsDrawer } from './components/SettingsDrawer';
 import { TimerHud } from './components/TimerHud';
 import { VideoBackground } from './components/VideoBackground';
+import { VideoCarousel } from './components/VideoCarousel';
 import { THEME } from './constants/theme';
 import { useVideos } from './hooks/useVideos';
 import { usePomodoroTimer } from './hooks/usePomodoroTimer';
@@ -14,6 +15,9 @@ const getCurrentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit'
 
 export default function KomoTerminal() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [carouselOpen, setCarouselOpen] = useState(false);
+  const [pendingVideoId, setPendingVideoId] = useState(null);
+  const [carouselDirection, setCarouselDirection] = useState(1);
   const [volume, setVolume] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const [autoDim, setAutoDim] = useState(true);
@@ -27,10 +31,45 @@ export default function KomoTerminal() {
   });
 
   const iframeRef = useRef(null);
+  const lastCarouselNavigationRef = useRef(0);
+  const carouselAnimatingRef = useRef(false);
+  const queuedCarouselStepRef = useRef(0);
+  const carouselStateRef = useRef(null);
 
   const timer = usePomodoroTimer();
   const videoState = useVideos();
   const { loadVideos } = videoState;
+  const { videos: loadedVideos, currentVid: loadedCurrentVid, selectVideo: selectLoadedVideo, forceRefresh, loading: videosLoading } = videoState;
+
+  useEffect(() => {
+    carouselStateRef.current = { videos: loadedVideos, pendingVideoId, currentVid: loadedCurrentVid };
+  }, [loadedVideos, pendingVideoId, loadedCurrentVid]);
+
+
+  function navigateCarousel(offset) {
+    if (carouselAnimatingRef.current) {
+      queuedCarouselStepRef.current = offset;
+      return;
+    }
+    const now = Date.now();
+    if (now - lastCarouselNavigationRef.current < 200) return;
+    lastCarouselNavigationRef.current = now;
+    const { videos, pendingVideoId: pending, currentVid } = carouselStateRef.current;
+    if (videos.length > 1) {
+      carouselAnimatingRef.current = true;
+      const preferredId = pending && videos.some((video) => video.id === pending) ? pending : currentVid;
+      const index = videos.findIndex((video) => video.id === preferredId);
+      setCarouselDirection(offset);
+      setPendingVideoId(videos[(Math.max(0, index) + offset + videos.length) % videos.length].id);
+    }
+  }
+
+  function finishCarouselAnimation() {
+    carouselAnimatingRef.current = false;
+    const queuedStep = queuedCarouselStepRef.current;
+    queuedCarouselStepRef.current = 0;
+    if (queuedStep) navigateCarousel(queuedStep);
+  }
 
   useEffect(() => {
     const clockInterval = setInterval(() => {
@@ -38,8 +77,38 @@ export default function KomoTerminal() {
     }, 1000);
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setDrawerOpen((prev) => !prev);
+      const target = e.target;
+      const isEditing = target instanceof HTMLElement && (
+        target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+      );
+      if (isEditing) return;
+
+      if (carouselOpen && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        navigateCarousel(e.key === 'ArrowLeft' ? -1 : 1);
+      } else if (carouselOpen && e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (!videosLoading) forceRefresh();
+      } else if (carouselOpen && e.key === 'Enter' && pendingVideoId) {
+        e.preventDefault();
+        const selectedId = loadedVideos.some((video) => video.id === pendingVideoId)
+          ? pendingVideoId
+          : loadedVideos.find((video) => video.id === loadedCurrentVid)?.id ?? loadedVideos[0]?.id;
+        if (selectedId) selectLoadedVideo(selectedId);
+        setPendingVideoId(null);
+        setCarouselOpen(false);
+      } else if (e.key === 'Escape') {
+        if (carouselOpen) {
+          e.preventDefault();
+          setPendingVideoId(null);
+          setCarouselOpen(false);
+        } else {
+          setDrawerOpen((prev) => !prev);
+        }
+      } else if (e.key.toLowerCase() === 'g' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setDrawerOpen(false);
+        setPendingVideoId(null);
+        setCarouselOpen((open) => !open);
       }
     };
 
@@ -49,7 +118,7 @@ export default function KomoTerminal() {
       clearInterval(clockInterval);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [carouselOpen, drawerOpen, loadedVideos, loadedCurrentVid, pendingVideoId, selectLoadedVideo, videosLoading, forceRefresh]);
 
   useEffect(() => {
     loadVideos();
@@ -190,6 +259,20 @@ export default function KomoTerminal() {
         noteAlign={noteAlign}
         onTogglePinned={() => setIsPinned((prev) => !prev)}
         onSetNoteAlign={setNoteAlign}
+        />
+
+        <VideoCarousel
+        open={carouselOpen}
+        videos={videoState.videos}
+        currentVid={videoState.currentVid}
+        pendingVideoId={loadedVideos.some((video) => video.id === pendingVideoId) ? pendingVideoId : null}
+        direction={carouselDirection}
+        loading={videoState.loading}
+        statusMsg={videoState.statusMsg}
+        onNavigate={navigateCarousel}
+        onAnimationComplete={finishCarouselAnimation}
+        onClose={() => { setPendingVideoId(null); setCarouselOpen(false); }}
+        onSelectVideo={selectVideo}
         />
 
         <SettingsDrawer

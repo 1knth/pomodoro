@@ -1,8 +1,27 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
 import { SEARCH_SEQUENCE } from '../constants/searchSequence';
 
 const FALLBACK_VIDEO_ID = 'bF2IxrQLCcQ';
+
+async function getRefreshError(res) {
+  let message;
+  try {
+    const body = await res.json();
+    if (typeof body?.error === 'string' && body.error.trim()) {
+      message = body.error.trim();
+    } else if (typeof body?.message === 'string' && body.message.trim()) {
+      message = body.message.trim();
+    }
+  } catch {
+    // Some server/proxy errors do not return JSON.
+  }
+
+  if (message) return message.slice(0, 160);
+  if (res.status >= 500) return 'The video service is having trouble. Please try again shortly.';
+  if (res.status === 429) return 'Refresh rate limited. Please try again shortly.';
+  return `Request failed (HTTP ${res.status}). Please try again.`;
+}
 
 export function useVideos() {
   const [videos, setVideos] = useState([]);
@@ -10,6 +29,7 @@ export function useVideos() {
   const [loading, setLoading] = useState(false);
   const [manualInput, setManualInput] = useState('');
   const [statusMsg, setStatusMsg] = useState('> SYSTEM IDLE');
+  const refreshInFlightRef = useRef(false);
 
   const loadVideos = useCallback(async () => {
     try {
@@ -30,6 +50,8 @@ export function useVideos() {
   }, []);
 
   const forceRefresh = async () => {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
     setLoading(true);
     let step = 0;
     setStatusMsg(SEARCH_SEQUENCE[0]);
@@ -42,11 +64,13 @@ export function useVideos() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/videos/refresh`, { method: 'POST' });
 
-      if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After') ?? '30';
-        throw new Error(`Refresh rate limited. Try again in ${retryAfter}s`);
+      if (!res.ok) {
+        if (res.status === 429) {
+          const retryAfter = res.headers.get('Retry-After') ?? '30';
+          throw new Error(`Refresh rate limited. Try again in ${retryAfter}s`);
+        }
+        throw new Error(await getRefreshError(res));
       }
-      if (!res.ok) throw new Error('Failed to refresh videos');
 
       const data = await res.json();
       setVideos(data);
@@ -54,9 +78,10 @@ export function useVideos() {
     } catch (error) {
       setStatusMsg(error.message?.includes('rate limited')
         ? `REFRESH LOCKED > ${error.message}`
-        : 'REFRESH FAILED > PLEASE TRY AGAIN...');
+        : `REFRESH FAILED > ${error.message || 'Unable to contact the video service. Check your connection and try again.'}`);
     } finally {
       clearInterval(sequenceId);
+      refreshInFlightRef.current = false;
       setLoading(false);
     }
   };
