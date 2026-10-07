@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { motion as Motion, useReducedMotion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { THEME } from '../constants/theme';
 import { formatTime } from '../utils/time';
 import { DockBtn } from './DockBtn';
@@ -18,7 +18,6 @@ export function TimerHud({
   onToggleVideoPlay,
   onOpenDrawer,
 }) {
-  const shouldReduceMotion = useReducedMotion();
   const [isHovered, setIsHovered] = useState(false);
   const clockPointerStartRef = useRef(null);
 
@@ -60,11 +59,11 @@ export function TimerHud({
       <Motion.div
       drag
       dragMomentum={false}
-      initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-      animate={{ opacity: isActive && autoDim && !isHovered ? 0.1 : 1, y: 0 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       style={{
+        opacity: isActive && autoDim && !isHovered ? 0.1 : 1,
+        transition: 'opacity 0.25s ease-in-out',
         position: 'absolute',
         top: '37%',
         left: '50%',

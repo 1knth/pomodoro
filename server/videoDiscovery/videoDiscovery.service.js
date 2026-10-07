@@ -10,7 +10,8 @@ function mapSearchResultToVideo(video) {
         id: video.videoId,
         title: video.title,
         thumb: video.thumbnail,
-        duration: video.timestamp
+        duration: video.timestamp,
+        channelName: video.author?.name
     };
 }
 
