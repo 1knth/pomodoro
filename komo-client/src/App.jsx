@@ -45,6 +45,16 @@ export default function KomoTerminal() {
     carouselStateRef.current = { videos: loadedVideos, pendingVideoId, currentVid: loadedCurrentVid };
   }, [loadedVideos, pendingVideoId, loadedCurrentVid]);
 
+  // A canceled Framer Motion animation does not reliably reach its completion
+  // callback. Release navigation state whenever the carousel closes so a
+  // canceled move can never lock the next session.
+  useEffect(() => {
+    if (carouselOpen) return;
+    carouselAnimatingRef.current = false;
+    queuedCarouselStepRef.current = 0;
+    lastCarouselNavigationRef.current = 0;
+  }, [carouselOpen]);
+
 
   function navigateCarousel(offset) {
     if (carouselAnimatingRef.current) {
