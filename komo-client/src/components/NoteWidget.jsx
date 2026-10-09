@@ -1,7 +1,7 @@
 import { motion as Motion, useReducedMotion } from 'framer-motion';
 import { THEME } from '../constants/theme';
 
-export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, onTogglePinned, onSetNoteAlign }) {
+export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, onTogglePinned, onSetNoteAlign, note, onNoteChange }) {
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -90,6 +90,8 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
             cols="40"
             aria-label="Focus note"
             placeholder="> note anything..."
+            value={note}
+            onChange={(event) => onNoteChange(event.target.value)}
             style={{
               background: '#ffffff38',
               borderRadius: '1rem',
