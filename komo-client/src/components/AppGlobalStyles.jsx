@@ -3,15 +3,18 @@ import { THEME } from '../constants/theme';
 export function AppGlobalStyles() {
   return (
     <style>{`
+      ::selection { background: #777; color: #fff; }
+      ::-moz-selection { background: #777; color: #fff; }
+
       button:focus:not(:focus-visible) { outline: none; }
-      button:not(:disabled) { transition: filter 160ms ease, transform 160ms ease; }
-      button:not(:disabled):hover:not([aria-label^="Selected video:"]) { filter: brightness(1.12); transform: translateY(-1px) scale(1.015); }
-      button:not(:disabled):active:not([aria-label^="Selected video:"]) { filter: brightness(0.96); transform: translateY(0) scale(0.985); }
       button:focus-visible { outline: 2px solid ${THEME.active}; outline-offset: 3px; }
-      @media (prefers-reduced-motion: reduce) {
-        button:not(:disabled) { transition: none; }
-        button:not(:disabled):hover, button:not(:disabled):active { transform: none; }
-      }
+      html[data-input-modality="pointer"] button:focus-visible { outline: none; }
+      .controls-hud button:not(:disabled) { transition: background-color 160ms ease; }
+      .controls-hud button:not(:disabled):hover { background-color: #555 !important; }
+      .controls-hud button:not(:disabled).active:hover { background-color: ${THEME.alabaster} !important; }
+      .controls-hud button:focus:not(:focus-visible) { outline: none; }
+      .controls-hud button:active:not(:disabled) { filter: none; transform: none; }
+
 
       input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; }
       input[type=range]:focus { outline: none; }

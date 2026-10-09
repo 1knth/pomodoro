@@ -6,6 +6,7 @@ export function DockBtn({ children, onClick, active, icon, style, title }) {
       type="button"
       onClick={onClick}
       title={title}
+      className={`dock-btn${active ? ' active' : ''}`}
       aria-label={icon && title ? title : undefined}
       style={{
         background: active ? THEME.alabaster : 'transparent',

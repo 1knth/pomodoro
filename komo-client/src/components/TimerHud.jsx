@@ -108,6 +108,7 @@ export function TimerHud({
 
       {visible.dock && (
         <div
+          className="controls-hud"
           style={{
             display: 'flex',
             gap: '8px',
