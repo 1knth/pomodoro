@@ -14,6 +14,7 @@ import { readStoredValue, writeStoredValue } from './utils/persistence';
 
 const NOTE_KEY = 'komo:v1:note';
 const VISIBILITY_KEY = 'komo:v1:widget-visibility';
+const AUTO_DIM_KEY = 'komo:v1:auto-dim';
 const DEFAULT_VISIBILITY = { timer: true, dock: true, intent: false };
 const isValidVisibility = (value) => value && Object.keys(value).length === 3 && ['timer', 'dock', 'intent'].every((key) => typeof value[key] === 'boolean');
 
@@ -26,7 +27,7 @@ export default function KomoTerminal() {
   const [carouselDirection, setCarouselDirection] = useState(1);
   const [volume, setVolume] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
-  const [autoDim, setAutoDim] = useState(true);
+  const [autoDim, setAutoDim] = useState(() => readStoredValue(AUTO_DIM_KEY, (value) => typeof value === 'boolean', true));
   const [currentTime, setCurrentTime] = useState(getCurrentTime);
   const [noteAlign, setNoteAlign] = useState('center');
   const [isPinned, setIsPinned] = useState(false);
@@ -55,6 +56,10 @@ export default function KomoTerminal() {
   useEffect(() => {
     writeStoredValue(VISIBILITY_KEY, visible);
   }, [visible]);
+
+  useEffect(() => {
+    writeStoredValue(AUTO_DIM_KEY, autoDim);
+  }, [autoDim]);
 
   // A canceled Framer Motion animation does not reliably reach its completion
   // callback. Release navigation state whenever the carousel closes so a

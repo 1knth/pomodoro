@@ -1,16 +1,26 @@
 import { motion as Motion, useReducedMotion } from 'framer-motion';
+import { useState } from 'react';
 import { THEME } from '../constants/theme';
 
 export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, onTogglePinned, onSetNoteAlign, note, onNoteChange }) {
   const shouldReduceMotion = useReducedMotion();
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <Motion.div
       drag
       dragMomentum={false}
-      initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
-      animate={{ opacity: isActive && autoDim && !isPinned ? 0.1 : 1, y: 0 }}
-      whileHover={{ opacity: 1 }}
+      initial={{ opacity: 1, y: shouldReduceMotion ? 0 : 20 }}
+      animate={{
+        opacity: isActive && autoDim && !isPinned && !isHovered ? 0.1 : 1,
+        y: 0,
+      }}
+      transition={{
+        opacity: { duration: shouldReduceMotion ? 0 : 0.25, ease: 'easeInOut' },
+        y: { duration: shouldReduceMotion ? 0 : 0.3, ease: 'easeOut' },
+      }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       style={{
         position: 'absolute',
         top: '65%',
@@ -21,6 +31,7 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        width: 'min(32rem, calc(100vw - 2rem))',
         cursor: 'grab',
         borderRadius: '0.6rem',
         backgroundColor: '#00000069',
@@ -37,7 +48,7 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
             aria-label={isPinned ? 'Unpin note widget' : 'Pin note widget'}
             style={{
               position: 'absolute',
-              left: -10,
+              right: '8px',
               top: '50%',
               transform: 'translateY(-50%)',
               background: 'transparent',
@@ -97,7 +108,8 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
               borderRadius: '1rem',
               border: 'none',
               color: 'rgb(255, 255, 255)',
-              width: '30rem',
+              width: '100%',
+              boxSizing: 'border-box',
               height: '8rem',
               fontFamily: THEME.fontMono,
               letterSpacing: '1.5px',
