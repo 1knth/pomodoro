@@ -6,6 +6,8 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
   const shouldReduceMotion = useReducedMotion();
   const [isHovered, setIsHovered] = useState(false);
 
+  if (!visible.intent) return null;
+
   return (
     <Motion.div
       drag
@@ -41,8 +43,7 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
         height: '1.5rem',
       }}
     >
-      {visible.intent && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', width: '100%', justifyContent: 'center', position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', width: '100%', justifyContent: 'center', position: 'relative' }}>
           <button
             type="button"
             onClick={onTogglePinned}
@@ -93,10 +94,8 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
             ))}
           </div>
         </div>
-      )}
 
-      {visible.intent && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minWidth: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minWidth: 0 }}>
           <textarea
             className="note-input"
             rows="5"
@@ -126,7 +125,6 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
             }}
           />
         </div>
-      )}
     </Motion.div>
   );
 }
