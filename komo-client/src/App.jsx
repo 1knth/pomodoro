@@ -91,7 +91,25 @@ export default function KomoTerminal() {
       const isEditing = target instanceof HTMLElement && (
         target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
       );
-      if (isEditing) return;
+      const isInteractive = target instanceof HTMLElement && (
+        target.closest('button, a[href], [role="button"], [contenteditable="true"]')
+      );
+
+      // Escape always dismisses the top-level UI, even when focus is on a
+      // range/number input. Do not toggle the drawer open as a side effect.
+      if (e.key === 'Escape') {
+        if (carouselOpen) {
+          e.preventDefault();
+          setPendingVideoId(null);
+          setCarouselOpen(false);
+          setDrawerOpen(false);
+        } else if (drawerOpen) {
+          e.preventDefault();
+          setDrawerOpen(false);
+        }
+        return;
+      }
+      if (isEditing || isInteractive) return;
 
       if (carouselOpen && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault();
@@ -107,14 +125,6 @@ export default function KomoTerminal() {
         if (selectedId) selectLoadedVideo(selectedId);
         setPendingVideoId(null);
         setCarouselOpen(false);
-      } else if (e.key === 'Escape') {
-        if (carouselOpen) {
-          e.preventDefault();
-          setPendingVideoId(null);
-          setCarouselOpen(false);
-        } else {
-          setDrawerOpen((prev) => !prev);
-        }
       } else if (e.key.toLowerCase() === 'g' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         setDrawerOpen(false);
         setPendingVideoId(null);
