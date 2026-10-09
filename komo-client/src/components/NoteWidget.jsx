@@ -32,6 +32,8 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
         flexDirection: 'column',
         alignItems: 'center',
         width: 'min(32rem, calc(100vw - 2rem))',
+        minWidth: 0,
+        boxSizing: 'border-box',
         cursor: 'grab',
         borderRadius: '0.6rem',
         backgroundColor: '#00000069',
@@ -94,7 +96,7 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
       )}
 
       {visible.intent && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minWidth: 0 }}>
           <textarea
             className="note-input"
             rows="5"
@@ -109,7 +111,10 @@ export function NoteWidget({ visible, isActive, autoDim, isPinned, noteAlign, on
               border: 'none',
               color: 'rgb(255, 255, 255)',
               width: '100%',
+              minWidth: 0,
+              maxWidth: '100%',
               boxSizing: 'border-box',
+              overflowWrap: 'anywhere',
               height: '8rem',
               fontFamily: THEME.fontMono,
               letterSpacing: '1.5px',
