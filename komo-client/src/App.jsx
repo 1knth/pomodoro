@@ -10,6 +10,12 @@ import { THEME } from './constants/theme';
 import { useVideos } from './hooks/useVideos';
 import { usePomodoroTimer } from './hooks/usePomodoroTimer';
 import { formatTime } from './utils/time';
+import { readStoredValue, writeStoredValue } from './utils/persistence';
+
+const NOTE_KEY = 'komo:v1:note';
+const VISIBILITY_KEY = 'komo:v1:widget-visibility';
+const DEFAULT_VISIBILITY = { timer: true, dock: true, intent: false };
+const isValidVisibility = (value) => value && Object.keys(value).length === 3 && ['timer', 'dock', 'intent'].every((key) => typeof value[key] === 'boolean');
 
 const getCurrentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -24,11 +30,8 @@ export default function KomoTerminal() {
   const [currentTime, setCurrentTime] = useState(getCurrentTime);
   const [noteAlign, setNoteAlign] = useState('center');
   const [isPinned, setIsPinned] = useState(false);
-  const [visible, setVisible] = useState({
-    timer: true,
-    dock: true,
-    intent: false,
-  });
+  const [note, setNote] = useState(() => readStoredValue(NOTE_KEY, (value) => typeof value === 'string', ''));
+  const [visible, setVisible] = useState(() => readStoredValue(VISIBILITY_KEY, isValidVisibility, DEFAULT_VISIBILITY));
 
   const iframeRef = useRef(null);
   const lastCarouselNavigationRef = useRef(0);
@@ -44,6 +47,14 @@ export default function KomoTerminal() {
   useEffect(() => {
     carouselStateRef.current = { videos: loadedVideos, pendingVideoId, currentVid: loadedCurrentVid };
   }, [loadedVideos, pendingVideoId, loadedCurrentVid]);
+
+  useEffect(() => {
+    writeStoredValue(NOTE_KEY, note);
+  }, [note]);
+
+  useEffect(() => {
+    writeStoredValue(VISIBILITY_KEY, visible);
+  }, [visible]);
 
   // A canceled Framer Motion animation does not reliably reach its completion
   // callback. Release navigation state whenever the carousel closes so a
@@ -280,6 +291,8 @@ export default function KomoTerminal() {
         noteAlign={noteAlign}
         onTogglePinned={() => setIsPinned((prev) => !prev)}
         onSetNoteAlign={setNoteAlign}
+        note={note}
+        onNoteChange={setNote}
         />
 
         <VideoCarousel
