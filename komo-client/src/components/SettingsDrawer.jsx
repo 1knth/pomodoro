@@ -48,7 +48,7 @@ export function SettingsDrawer({
   const normalizeDuration = (key) => {
     const draft = durationDrafts[key];
     const requestedMinutes = Number(draft.minutes);
-    const minutes = Math.min(Math.floor((Number.MAX_SAFE_INTEGER - 60) / 60), Math.max(0, Math.floor(Number.isFinite(requestedMinutes) ? requestedMinutes : 0)));
+    const minutes = Math.min(999, Math.max(0, Math.floor(Number.isFinite(requestedMinutes) ? requestedMinutes : 0)));
     const requestedSeconds = Number(draft.seconds);
     const totalSeconds = Math.max(1, minutes * 60 + Math.floor(Number.isFinite(requestedSeconds) ? requestedSeconds : 0));
     const normalizedMinutes = Math.floor(totalSeconds / 60);
