@@ -50,9 +50,11 @@ export function SettingsDrawer({
     const requestedMinutes = Number(draft.minutes);
     const minutes = Math.min(Math.floor((Number.MAX_SAFE_INTEGER - 60) / 60), Math.max(0, Math.floor(Number.isFinite(requestedMinutes) ? requestedMinutes : 0)));
     const requestedSeconds = Number(draft.seconds);
-    const seconds = Math.min(60, Math.max(1, Math.floor(Number.isFinite(requestedSeconds) ? requestedSeconds : 1)));
-    setDurationDrafts((current) => ({ ...current, [key]: { minutes: String(minutes), seconds: String(seconds) } }));
-    onUpdateDuration(key, minutes * 60 + seconds);
+    const totalSeconds = Math.max(1, minutes * 60 + Math.floor(Number.isFinite(requestedSeconds) ? requestedSeconds : 0));
+    const normalizedMinutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    setDurationDrafts((current) => ({ ...current, [key]: { minutes: String(normalizedMinutes), seconds: String(seconds) } }));
+    onUpdateDuration(key, totalSeconds);
   };
 
   return (
@@ -130,7 +132,7 @@ export function SettingsDrawer({
                     </label>
                     <span aria-hidden="true" style={{ color: '#666', fontFamily: THEME.fontMono }}>:</span>
                     <label style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: '5px', minWidth: 0 }}>
-                      <input type="number" min="1" max="60" step="any" aria-label={`${label} seconds`} value={durationDrafts[key]?.seconds ?? ''} onChange={(e) => updateDurationPart(key, 'seconds', e.target.value)} onBlur={(e) => { e.currentTarget.style.borderColor = THEME.border; normalizeDuration(key); }} onFocus={(e) => { e.currentTarget.style.borderColor = THEME.alabaster; }} style={{ boxSizing: 'border-box', width: '100%', minWidth: 0, padding: '6px 7px', textAlign: 'right', background: 'rgba(255,255,255,0.04)', border: `1px solid ${THEME.border}`, borderRadius: '4px', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '13px', outline: 'none' }} />
+                      <input type="number" min="0" max="59" step="any" aria-label={`${label} seconds`} value={durationDrafts[key]?.seconds ?? ''} onChange={(e) => updateDurationPart(key, 'seconds', e.target.value)} onBlur={(e) => { e.currentTarget.style.borderColor = THEME.border; normalizeDuration(key); }} onFocus={(e) => { e.currentTarget.style.borderColor = THEME.alabaster; }} style={{ boxSizing: 'border-box', width: '100%', minWidth: 0, padding: '6px 7px', textAlign: 'right', background: 'rgba(255,255,255,0.04)', border: `1px solid ${THEME.border}`, borderRadius: '4px', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '13px', outline: 'none' }} />
                       <span style={{ color: '#777', fontSize: '10px', fontFamily: THEME.fontMono }}>SEC</span>
                     </label>
                   </div>
