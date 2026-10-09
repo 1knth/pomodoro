@@ -59,7 +59,8 @@ export function usePomodoroTimer() {
   };
 
   const updateDuration = (key, value) => {
-    const totalSeconds = Math.min(MAX_DURATION_SECONDS, Math.max(1, Math.floor(Number(value) || 1)));
+    const requestedSeconds = Number(value);
+    const totalSeconds = Math.min(MAX_DURATION_SECONDS, Math.max(1, Math.floor(Number.isFinite(requestedSeconds) ? requestedSeconds : 1)));
     const newDurations = { ...durations, [key]: totalSeconds };
     setDurations(newDurations);
 
@@ -141,6 +142,7 @@ export function usePomodoroTimer() {
     durations,
     breakMode,
     mode,
+    selectedBreakMode: breakMode,
     timeLeft,
     isActive,
     chimeEnabled,

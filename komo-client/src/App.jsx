@@ -93,6 +93,25 @@ export default function KomoTerminal() {
   }
 
   useEffect(() => {
+    const markPointerModality = () => {
+      document.documentElement.dataset.inputModality = 'pointer';
+    };
+    const markKeyboardModality = (event) => {
+      if (event.key === 'Tab') {
+        document.documentElement.dataset.inputModality = 'keyboard';
+      }
+    };
+
+    window.addEventListener('pointerdown', markPointerModality, true);
+    window.addEventListener('keydown', markKeyboardModality, true);
+    return () => {
+      window.removeEventListener('pointerdown', markPointerModality, true);
+      window.removeEventListener('keydown', markKeyboardModality, true);
+      delete document.documentElement.dataset.inputModality;
+    };
+  }, []);
+
+  useEffect(() => {
     const clockInterval = setInterval(() => {
       setCurrentTime(getCurrentTime());
     }, 1000);
@@ -321,12 +340,14 @@ export default function KomoTerminal() {
         currentVid={videoState.currentVid}
         volume={volume}
         mode={timer.mode}
+        selectedBreakMode={timer.selectedBreakMode}
         isActive={timer.isActive}
         chimeEnabled={timer.chimeEnabled}
         onClose={() => setDrawerOpen(false)}
         onToggleVisible={toggleVisible}
         onToggleAutoDim={() => setAutoDim((prev) => !prev)}
         onUpdateDuration={timer.updateDuration}
+        onSwitchMode={timer.switchMode}
         onManualInputChange={videoState.setManualInput}
         onManualSubmit={handleManualSubmit}
         onForceRefresh={videoState.forceRefresh}
