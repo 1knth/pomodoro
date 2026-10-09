@@ -95,17 +95,17 @@ export default function KomoTerminal() {
         target.closest('button, a[href], [role="button"], [contenteditable="true"]')
       );
 
-      // Escape always dismisses the top-level UI, even when focus is on a
-      // range/number input. Do not toggle the drawer open as a side effect.
+      // Escape is handled before the focus guard so it works from buttons and
+      // controls, including the volume slider. Dismiss the topmost screen first.
       if (e.key === 'Escape') {
+        e.preventDefault();
         if (carouselOpen) {
-          e.preventDefault();
           setPendingVideoId(null);
           setCarouselOpen(false);
-          setDrawerOpen(false);
         } else if (drawerOpen) {
-          e.preventDefault();
           setDrawerOpen(false);
+        } else {
+          setDrawerOpen(true);
         }
         return;
       }
