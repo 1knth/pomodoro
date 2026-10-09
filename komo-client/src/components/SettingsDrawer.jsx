@@ -1,4 +1,5 @@
 import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion';
+import { useState } from 'react';
 import { THEME } from '../constants/theme';
 
 export function SettingsDrawer({
@@ -29,6 +30,30 @@ export function SettingsDrawer({
   onToggleChime,
 }) {
   const shouldReduceMotion = useReducedMotion();
+  const [durationDrafts, setDurationDrafts] = useState(() => Object.fromEntries(
+    Object.entries(durations).map(([key, total]) => [key, {
+      minutes: String(Math.floor((total - 1) / 60)),
+      seconds: String(((total - 1) % 60) + 1),
+    }]),
+  ));
+
+
+  const updateDurationPart = (key, part, value) => {
+    setDurationDrafts((current) => ({
+      ...current,
+      [key]: { ...current[key], [part]: value },
+    }));
+  };
+
+  const normalizeDuration = (key) => {
+    const draft = durationDrafts[key];
+    const requestedMinutes = Number(draft.minutes);
+    const minutes = Math.min(Math.floor((Number.MAX_SAFE_INTEGER - 60) / 60), Math.max(0, Math.floor(Number.isFinite(requestedMinutes) ? requestedMinutes : 0)));
+    const requestedSeconds = Number(draft.seconds);
+    const seconds = Math.min(60, Math.max(1, Math.floor(Number.isFinite(requestedSeconds) ? requestedSeconds : 1)));
+    setDurationDrafts((current) => ({ ...current, [key]: { minutes: String(minutes), seconds: String(seconds) } }));
+    onUpdateDuration(key, minutes * 60 + seconds);
+  };
 
   return (
     <AnimatePresence>
@@ -90,18 +115,28 @@ export function SettingsDrawer({
               </section>
             </div>
 
-            <div aria-label="Timer durations" style={{ width: 'min(340px, 100%)', display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginBottom: '1.5rem', fontSize: '16px', textTransform: 'lowercase' }}>
+            <section aria-label="Timer durations" style={{ width: 'min(420px, 100%)', display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginBottom: '1.5rem' }}>
               {[
-                ['focus', 'FOCUS DURATION (MIN)'],
-                ['break', 'BREAK DURATION (MIN)'],
-                ['short', 'SHORT BREAK (MIN)'],
+                ['focus', 'Focus'],
+                ['break', 'Break'],
+                ['short', 'Short break'],
               ].map(([key, label]) => (
-                <label key={key} style={{ minWidth: 0, display: 'grid', gridTemplateColumns: '1fr minmax(6ch, 25%)', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '8px 10px', cursor: 'text' }}>
-                  <span style={{ fontFamily: THEME.fontMono, color: '#888' }}>{label}</span>
-                  <input type="number" min="1" max="999" step="1" aria-label={label} value={durations[key]} onChange={(e) => onUpdateDuration(key, e.target.value)} style={{ boxSizing: 'border-box', width: '100%', minWidth: 0, padding: '5px 8px', textAlign: 'right', background: 'rgba(255,255,255,0.04)', border: `1px solid ${THEME.border}`, borderRadius: '4px', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: 'inherit', outline: 'none', cursor: 'text' }} onFocus={(e) => { e.currentTarget.style.borderColor = THEME.alabaster; }} onBlur={(e) => { e.currentTarget.style.borderColor = THEME.border; }} />
-                </label>
+                <div key={key} style={{ minWidth: 0, display: 'grid', gridTemplateColumns: 'minmax(100px, 1fr) minmax(0, 2fr)', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${THEME.border}`, borderRadius: '6px', padding: '10px' }}>
+                  <span style={{ fontFamily: THEME.fontMono, color: '#aaa', fontSize: '12px' }}>{label}</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)', alignItems: 'center', gap: '6px' }}>
+                    <label style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                      <input type="number" min="0" step="any" aria-label={`${label} minutes`} value={durationDrafts[key]?.minutes ?? ''} onChange={(e) => updateDurationPart(key, 'minutes', e.target.value)} onBlur={(e) => { e.currentTarget.style.borderColor = THEME.border; normalizeDuration(key); }} onFocus={(e) => { e.currentTarget.style.borderColor = THEME.alabaster; }} style={{ boxSizing: 'border-box', width: '100%', minWidth: 0, padding: '6px 7px', textAlign: 'right', background: 'rgba(255,255,255,0.04)', border: `1px solid ${THEME.border}`, borderRadius: '4px', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '13px', outline: 'none' }} />
+                      <span style={{ color: '#777', fontSize: '10px', fontFamily: THEME.fontMono }}>MIN</span>
+                    </label>
+                    <span aria-hidden="true" style={{ color: '#666', fontFamily: THEME.fontMono }}>:</span>
+                    <label style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                      <input type="number" min="1" max="60" step="any" aria-label={`${label} seconds`} value={durationDrafts[key]?.seconds ?? ''} onChange={(e) => updateDurationPart(key, 'seconds', e.target.value)} onBlur={(e) => { e.currentTarget.style.borderColor = THEME.border; normalizeDuration(key); }} onFocus={(e) => { e.currentTarget.style.borderColor = THEME.alabaster; }} style={{ boxSizing: 'border-box', width: '100%', minWidth: 0, padding: '6px 7px', textAlign: 'right', background: 'rgba(255,255,255,0.04)', border: `1px solid ${THEME.border}`, borderRadius: '4px', color: THEME.alabaster, fontFamily: THEME.fontMono, fontSize: '13px', outline: 'none' }} />
+                      <span style={{ color: '#777', fontSize: '10px', fontFamily: THEME.fontMono }}>SEC</span>
+                    </label>
+                  </div>
+                </div>
               ))}
-            </div>
+            </section>
 
             {!visible.dock && (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
