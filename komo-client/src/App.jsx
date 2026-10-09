@@ -258,6 +258,7 @@ export default function KomoTerminal() {
 
         <TimerHud
         mode={timer.mode}
+        breakMode={timer.breakMode}
         timeLeft={timer.timeLeft}
         isActive={timer.isActive}
         autoDim={autoDim}

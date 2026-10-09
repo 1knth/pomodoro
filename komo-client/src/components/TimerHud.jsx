@@ -6,6 +6,7 @@ import { DockBtn } from './DockBtn';
 
 export function TimerHud({
   mode,
+  breakMode,
   timeLeft,
   isActive,
   autoDim,
@@ -78,7 +79,7 @@ export function TimerHud({
     >
       <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', zIndex: 101 }}>
         {['focus', 'break', 'short'].map((item) => (
-          <button key={item} type="button" className={`mode-btn ${mode === item ? 'active' : ''}`} onClick={() => onSwitchMode(item)} style={{ fontSize: '12px' }}>
+          <button key={item} type="button" className={`mode-btn ${mode === item || (mode === 'focus' && breakMode === item) ? 'active' : ''}`} onClick={() => onSwitchMode(item)} style={{ fontSize: '12px' }}>
             {item.toUpperCase()}
           </button>
         ))}

@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { readStoredValue, writeStoredValue } from '../utils/persistence';
+
+const DURATIONS_KEY = 'komo:v1:timer-durations';
+const BREAK_MODE_KEY = 'komo:v1:break-mode';
+const DEFAULT_DURATIONS = { focus: 25 * 60, break: 5 * 60, short: 2 * 60 };
+const MAX_DURATION_SECONDS = 999 * 60 + 59;
+const isValidDurations = (value) => value && ['focus', 'break', 'short'].every(
+  (key) => Number.isInteger(value[key]) && value[key] >= 1 && value[key] <= MAX_DURATION_SECONDS,
+);
+const isValidBreakMode = (value) => value === 'break' || value === 'short';
 
 export function usePomodoroTimer() {
-  const [durations, setDurations] = useState({ focus: 25 * 60, break: 5 * 60, short: 2 * 60 });
+  const [durations, setDurations] = useState(() => readStoredValue(DURATIONS_KEY, isValidDurations, DEFAULT_DURATIONS));
+  const [breakMode, setBreakMode] = useState(() => readStoredValue(BREAK_MODE_KEY, isValidBreakMode, 'break'));
   const [mode, setMode] = useState('focus');
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [timeLeft, setTimeLeft] = useState(() => durations.focus);
   const [isActive, setIsActive] = useState(false);
   const [chimeEnabled, setChimeEnabled] = useState(() => {
     try {
@@ -24,7 +35,12 @@ export function usePomodoroTimer() {
 
   useEffect(() => {
     durationsRef.current = durations;
+    writeStoredValue(DURATIONS_KEY, durations);
   }, [durations]);
+
+  useEffect(() => {
+    writeStoredValue(BREAK_MODE_KEY, breakMode);
+  }, [breakMode]);
 
   useEffect(() => {
     chimeEnabledRef.current = chimeEnabled;
@@ -37,12 +53,13 @@ export function usePomodoroTimer() {
 
   const switchMode = (newMode) => {
     setMode(newMode);
+    if (newMode === 'break' || newMode === 'short') setBreakMode(newMode);
     setTimeLeft(durations[newMode]);
     setIsActive(false);
   };
 
   const updateDuration = (key, value) => {
-    const totalSeconds = Math.max(1, Math.floor(Number(value) || 1));
+    const totalSeconds = Math.min(MAX_DURATION_SECONDS, Math.max(1, Math.floor(Number(value) || 1)));
     const newDurations = { ...durations, [key]: totalSeconds };
     setDurations(newDurations);
 
@@ -80,14 +97,14 @@ export function usePomodoroTimer() {
   const handleTimerComplete = useCallback(() => {
     playCompletionChime();
     const currentMode = modeRef.current;
-    const nextMode = currentMode === 'focus' ? 'break' : 'focus';
+    const nextMode = currentMode === 'focus' ? breakMode : 'focus';
 
     console.log(currentMode === 'focus' ? 'FOCUS COMPLETE > INITIATING BREAK' : 'BREAK COMPLETE > RE-ENGAGING FOCUS');
     setMode(nextMode);
     setIsActive(true);
 
     return durationsRef.current[nextMode];
-  }, [playCompletionChime]);
+  }, [breakMode, playCompletionChime]);
 
   useEffect(() => {
     if (!isActive) {
@@ -122,6 +139,7 @@ export function usePomodoroTimer() {
 
   return {
     durations,
+    breakMode,
     mode,
     timeLeft,
     isActive,
