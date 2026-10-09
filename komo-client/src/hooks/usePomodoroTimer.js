@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function usePomodoroTimer() {
-  const [durations, setDurations] = useState({ focus: 25, break: 5, short: 2 });
+  const [durations, setDurations] = useState({ focus: 25 * 60, break: 5 * 60, short: 2 * 60 });
   const [mode, setMode] = useState('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
@@ -37,17 +37,17 @@ export function usePomodoroTimer() {
 
   const switchMode = (newMode) => {
     setMode(newMode);
-    setTimeLeft(durations[newMode] * 60);
+    setTimeLeft(durations[newMode]);
     setIsActive(false);
   };
 
   const updateDuration = (key, value) => {
-    const val = parseInt(value, 10) || 1;
-    const newDurations = { ...durations, [key]: val };
+    const totalSeconds = Math.max(1, Math.floor(Number(value) || 1));
+    const newDurations = { ...durations, [key]: totalSeconds };
     setDurations(newDurations);
 
-    if (mode === key && !isActive) {
-      setTimeLeft(val * 60);
+    if (mode === key) {
+      setTimeLeft(totalSeconds);
     }
   };
 
@@ -86,7 +86,7 @@ export function usePomodoroTimer() {
     setMode(nextMode);
     setIsActive(true);
 
-    return durationsRef.current[nextMode] * 60;
+    return durationsRef.current[nextMode];
   }, [playCompletionChime]);
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export function usePomodoroTimer() {
   };
   const resetTimer = () => {
     setIsActive(false);
-    setTimeLeft(durations[mode] * 60);
+    setTimeLeft(durations[mode]);
   };
 
   return {
