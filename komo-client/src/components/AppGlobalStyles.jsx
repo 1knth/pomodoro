@@ -3,6 +3,16 @@ import { THEME } from '../constants/theme';
 export function AppGlobalStyles() {
   return (
     <style>{`
+      button:focus:not(:focus-visible) { outline: none; }
+      button:not(:disabled) { transition: filter 160ms ease, transform 160ms ease; }
+      button:not(:disabled):hover:not([aria-label^="Selected video:"]) { filter: brightness(1.12); transform: translateY(-1px) scale(1.015); }
+      button:not(:disabled):active:not([aria-label^="Selected video:"]) { filter: brightness(0.96); transform: translateY(0) scale(0.985); }
+      button:focus-visible { outline: 2px solid ${THEME.active}; outline-offset: 3px; }
+      @media (prefers-reduced-motion: reduce) {
+        button:not(:disabled) { transition: none; }
+        button:not(:disabled):hover, button:not(:disabled):active { transform: none; }
+      }
+
       input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; }
       input[type=range]:focus { outline: none; }
       input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 1px; }
@@ -12,7 +22,7 @@ export function AppGlobalStyles() {
       .settings-page, .settings-page * { text-transform: lowercase !important; }
       .settings-page :is(button, input, label, span, div, h2) { font-size: 12px !important; }
 
-      .mode-btn { font-size: 10px; opacity: 0.5; transition: 0.2s; cursor: pointer; background: transparent; border: none; color: ${THEME.alabaster}; font-family: ${THEME.fontMono}; letter-spacing: 1px; }
+      .mode-btn { font-size: 10px; opacity: 0.5; transition: opacity 0.2s ease, filter 160ms ease, transform 160ms ease; cursor: pointer; background: transparent; border: none; color: ${THEME.alabaster}; font-family: ${THEME.fontMono}; letter-spacing: 1px; }
       .mode-btn:hover, .mode-btn.active { opacity: 1; text-decoration: underline; }
 
       input::-webkit-outer-spin-button,
